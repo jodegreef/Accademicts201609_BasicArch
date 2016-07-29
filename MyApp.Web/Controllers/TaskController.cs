@@ -4,47 +4,75 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
-using System.Web.Http;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin.Security;
 using Owin;
-using MyApp.Web.Models;
+using System.Web.Mvc;
+using MyApp.ApplicationService;
 
 namespace MyApp.Web.Controllers
 {
-    [Authorize]
-    public class TaskController : ApiController
+    public class TaskController : Controller
     {
-        private ApplicationUserManager _userManager;
+        private ITaskService _taskService;
 
-        public TaskController()
+        public TaskController(ITaskService taskService)
         {
+            _taskService = taskService;
         }
 
-        public TaskController(ApplicationUserManager userManager)
+        public ActionResult Index()
         {
-            UserManager = userManager;
+            var result = _taskService.GetTasks();
+            
+            return View(result);
         }
 
-        public ApplicationUserManager UserManager
+        public ActionResult Detail(Guid id)
         {
-            get
-            {
-                return _userManager ?? HttpContext.Current.GetOwinContext().GetUserManager<ApplicationUserManager>();
-            }
-            private set
-            {
-                _userManager = value;
-            }
+            var result = _taskService.GetTaskDetail(id);
+
+            return View(result);
         }
 
-        // GET api/Me
-        public GetViewModel Get()
+        public ActionResult Add()
         {
-            var user = UserManager.FindById(User.Identity.GetUserId());
-            return new GetViewModel() { Hometown = user.Hometown };
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult Add(string title)
+        {
+            _taskService.CreateNewTask(Guid.NewGuid(), title);
+
+            return RedirectToAction("Index");
+        }
+
+
+        public ActionResult DecreasePriority(Guid id)
+        {
+            _taskService.DecreasePriority(id);
+            return RedirectToAction("Index");
+        }
+
+        public ActionResult IncreasePriority(Guid id)
+        {
+            _taskService.IncreatePriority(id);
+            return RedirectToAction("Index");
+        }
+
+        public ActionResult Complete(Guid id)
+        {
+            _taskService.Complete(id);
+            return RedirectToAction("Index");
+        }
+
+        public ActionResult Delete(Guid id)
+        {
+            _taskService.Delete(id);
+            return RedirectToAction("Index");
         }
     }
 }
